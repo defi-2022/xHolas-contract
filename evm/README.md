@@ -1,41 +1,34 @@
-# Foundry Template [![Github Actions][gha-badge]][gha] [![Foundry][foundry-badge]][foundry] [![License: MIT][license-badge]][license]
+# Hardhat Template [![Open in Gitpod][gitpod-badge]][gitpod] [![Github Actions][gha-badge]][gha] [![Hardhat][hardhat-badge]][hardhat] [![License: MIT][license-badge]][license]
 
-[gha]: https://github.com/paulrberg/foundry-template/actions
-[gha-badge]: https://github.com/paulrberg/foundry-template/actions/workflows/ci.yml/badge.svg
-[foundry]: https://getfoundry.sh/
-[foundry-badge]: https://img.shields.io/badge/Built%20with-Foundry-FFDB1C.svg
+[gitpod]: https://gitpod.io/#https://github.com/paulrberg/hardhat-template
+[gitpod-badge]: https://img.shields.io/badge/Gitpod-Open%20in%20Gitpod-FFB45B?logo=gitpod
+[gha]: https://github.com/paulrberg/hardhat-template/actions
+[gha-badge]: https://github.com/paulrberg/hardhat-template/actions/workflows/ci.yml/badge.svg
+[hardhat]: https://hardhat.org/
+[hardhat-badge]: https://img.shields.io/badge/Built%20with-Hardhat-FFDB1C.svg
 [license]: https://opensource.org/licenses/MIT
 [license-badge]: https://img.shields.io/badge/License-MIT-blue.svg
 
-A Foundry-based template for developing Solidity smart contracts, with sensible defaults.
+A Hardhat-based template for developing Solidity smart contracts, with sensible defaults.
 
-## What's Inside
-
-- [Forge](https://github.com/foundry-rs/foundry/blob/master/forge): compile, test, fuzz, debug and deploy smart contracts
-- [PRBTest](https://github.com/paulrberg/prb-test): modern collection of testing assertions and logging utilities
-- [Forge Std](https://github.com/foundry-rs/forge-std): collection of helpful contracts and cheatcodes for testing
+- [Hardhat](https://github.com/nomiclabs/hardhat): compile, run and test smart contracts
+- [TypeChain](https://github.com/ethereum-ts/TypeChain): generate TypeScript bindings for smart contracts
+- [Ethers](https://github.com/ethers-io/ethers.js/): renowned Ethereum library and wallet implementation
 - [Solhint](https://github.com/protofire/solhint): code linter
+- [Solcover](https://github.com/sc-forks/solidity-coverage): code coverage
 - [Prettier Plugin Solidity](https://github.com/prettier-solidity/prettier-plugin-solidity): code formatter
 
 ## Getting Started
 
-Click the [`Use this template`](https://github.com/paulrberg/foundry-template/generate) button at the top of the page to create a new repository with this repo as the initial state.
-
-Or, if you prefer to install the template manually:
-
-```sh
-forge init my-project --template https://github.com/paulrberg/foundry-template
-cd my-project
-yarn install # install solhint and prettier and other goodies
-```
-
-If this is your first time with Foundry, check out the [installation](https://github.com/foundry-rs/foundry#installation) instructions.
+Click the [`Use this template`](https://github.com/paulrberg/hardhat-template/generate) button at the top of the page to
+create a new repository with this repo as the initial state.
 
 ## Features
 
 This template builds upon the frameworks and libraries mentioned above, so for details about their specific features, please consult their respective documentations.
 
-For example, for Foundry, you can refer to the [Foundry Book](https://book.getfoundry.sh/). You might be in particular interested in reading the [Writing Tests](https://book.getfoundry.sh/forge/writing-tests.html) guide.
+For example, for Hardhat, you can refer to the [Hardhat Tutorial](https://hardhat.org/tutorial) and the [Hardhat
+Docs](https://hardhat.org/docs). You might be in particular interested in reading the [Testing Contracts](https://hardhat.org/tutorial/testing-contracts) section.
 
 ### Sensible Defaults
 
@@ -44,20 +37,24 @@ This template comes with sensible default configurations in the following files:
 ```text
 ├── .commitlintrc.yml
 ├── .editorconfig
+├── .eslintignore
+├── .eslintrc.yml
 ├── .gitignore
 ├── .prettierignore
 ├── .prettierrc.yml
+├── .solcover.js
 ├── .solhintignore
 ├── .solhint.json
 ├── .yarnrc.yml
-├── foundry.toml
-└── remappings.txt
+└── hardhat.config.ts
 ```
 
 ### GitHub Actions
 
 This template comes with GitHub Actions pre-configured. Your contracts will be linted and tested on every push and pull
 request made to the `main` branch.
+
+Note though that to make this work, you must use your `INFURA_API_KEY` and your `MNEMONIC` as GitHub secrets.
 
 You can edit the CI script in [.github/workflows/ci.yml](./.github/workflows/ci.yml).
 
@@ -71,95 +68,102 @@ tools on top of.
 
 This template uses [Husky](https://github.com/typicode/husky) to run automated checks on commit messages, and [Lint Staged](https://github.com/okonet/lint-staged) to automatically format the code with Prettier when making a git commit.
 
-## Writing Tests
-
-To write a new test contract, you start by importing [PRBTest](https://github.com/paulrberg/prb-test) and inherit from it in your test contract. PRBTest comes with a
-pre-instantiated [cheatcodes](https://book.getfoundry.sh/cheatcodes/) environment accessible via the `vm` property. You can also use [console.log](https://book.getfoundry.sh/faq?highlight=console.log#how-do-i-use-consolelog), whose logs you can see in the terminal output by adding the `-vvvv` flag.
-
-This template comes with an example test contract [Foo.t.sol](./test/Foo.t.sol).
-
 ## Usage
 
-Here's a list of the most frequently needed commands.
+### Pre Requisites
 
-### Build
+Before being able to run any command, you need to create a `.env` file and set a BIP-39 compatible mnemonic as an environment
+variable. You can follow the example in `.env.example`. If you don't already have a mnemonic, you can use this [website](https://iancoleman.io/bip39/) to generate one.
 
-Build the contracts:
-
-```sh
-$ forge build
-```
-
-### Clean
-
-Delete the build artifacts and cache directories:
+Then, proceed with installing dependencies:
 
 ```sh
-$ forge clean
+$ yarn install
 ```
 
 ### Compile
 
-Compile the contracts:
+Compile the smart contracts with Hardhat:
 
 ```sh
-$ forge build
+$ yarn compile
 ```
 
-### Deploy
+### TypeChain
 
-Deploy to Anvil:
-
-```sh
-$ forge script script/Foo.s.sol:FooScript --fork-url http://localhost:8545 \
- --broadcast --private-key $PRIVATE_KEY
-```
-
-For instructions on how to deploy to a testnet or mainnet, check out the [Solidity Scripting tutorial](https://book.getfoundry.sh/tutorials/solidity-scripting.html).
-
-### Format
-
-Format the contracts with Prettier:
+Compile the smart contracts and generate TypeChain bindings:
 
 ```sh
-$ yarn prettier
-```
-
-### Gas Usage
-
-Get a gas report:
-
-```sh
-$ forge test --gas-report
-```
-
-### Lint
-
-Lint the contracts:
-
-```sh
-$ yarn lint
+$ yarn typechain
 ```
 
 ### Test
 
-Run the tests:
+Run the tests with Hardhat:
 
 ```sh
-$ forge test
+$ yarn test
 ```
 
-## Notes
+### Lint Solidity
 
-1. Foundry piggybacks off [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules) to manage dependencies. There's a [guide](https://book.getfoundry.sh/projects/dependencies.html) about how to work with dependencies in the book.
-2. You don't have to create a `.env` file, but filling in the environment variables may be useful when debugging and testing against a mainnet fork.
+Lint the Solidity code:
 
-## Related Efforts
+```sh
+$ yarn lint:sol
+```
 
-- [abigger87/femplate](https://github.com/abigger87/femplate)
-- [cleanunicorn/ethereum-smartcontract-template](https://github.com/cleanunicorn/ethereum-smartcontract-template)
-- [foundry-rs/forge-template](https://github.com/foundry-rs/forge-template)
-- [FrankieIsLost/forge-template](https://github.com/FrankieIsLost/forge-template)
+### Lint TypeScript
+
+Lint the TypeScript code:
+
+```sh
+$ yarn lint:ts
+```
+
+### Coverage
+
+Generate the code coverage report:
+
+```sh
+$ yarn coverage
+```
+
+### Report Gas
+
+See the gas usage per unit test and average gas per method call:
+
+```sh
+$ REPORT_GAS=true yarn test
+```
+
+### Clean
+
+Delete the smart contract artifacts, the coverage reports and the Hardhat cache:
+
+```sh
+$ yarn clean
+```
+
+### Deploy
+
+Deploy the contracts to Hardhat Network:
+
+```sh
+$ yarn deploy --greeting "Bonjour, le monde!"
+```
+
+## Tips
+
+### Syntax Highlighting
+
+If you use VSCode, you can get Solidity syntax highlighting with the [hardhat-solidity](https://marketplace.visualstudio.com/items?itemName=NomicFoundation.hardhat-solidity) extension.
+
+## Using GitPod
+
+[GitPod](https://www.gitpod.io/) is an open-source developer platform for remote development.
+
+To view the coverage report generated by `yarn coverage`, just click `Go Live` from the status bar to turn the server on/off.
 
 ## License
 

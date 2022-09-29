@@ -5,19 +5,22 @@
 !.yarn/plugins
 !.yarn/sdks
 !.yarn/versions
+**/artifacts
+**/build
 **/cache
+**/coverage
+**/.coverage_artifacts
+**/.coverage_cache
+**/.coverage_contracts
+**/dist
 **/node_modules
-**/out
+**/types
 
 # files
 *.env
 *.log
-.DS_Store
 .pnp.*
+coverage.json
+npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# broadcasts
-!/broadcast
-/broadcast/*
-/broadcast/*/31337/
