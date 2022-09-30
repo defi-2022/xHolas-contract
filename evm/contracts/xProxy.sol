@@ -1,18 +1,16 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.10;
 
-import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import { SafeERC20 } from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-import { Address } from '@openzeppelin/contracts/utils/Address.sol';
-import { Strings } from '@openzeppelin/contracts/utils/Strings.sol';
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import "./interfaces/IxProxy.sol";
+import "./libs/Config.sol";
+import "./libs/Storage.sol";
+import "./libs/LibParam.sol";
 
-import { IxEngine } from './interfaces/IxEngine.sol';
-import { Config } from './libs/Config.sol';
-import { Storage } from './libs/Storage.sol';
-import { LibParam } from './libs/LibParam.sol';
-import { LibStack } from './libs/LibStack.sol';
-
-contract xEngine is IxEngine, Storage, Config {
+contract Proxy is IProxy, Storage, Config {
     using Address for address;
     using SafeERC20 for IERC20;
     using LibParam for bytes32;
@@ -24,14 +22,14 @@ contract xEngine is IxEngine, Storage, Config {
         bytes4 indexed selector,
         bytes payload
     );
-
     event LogEnd(
         address indexed handler,
         bytes4 indexed selector,
         bytes result
     );
 
-    address private constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address private constant NATIVE_TOKEN =
+    0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /**
      * @notice Direct transfer from EOA should be reverted.
@@ -57,7 +55,8 @@ contract xEngine is IxEngine, Storage, Config {
     }
 
     /**
-     * @notice Combo execution function.
+     * @notice Combo execution function. Including three phases: pre-process,
+     * exection and post-process.
      * @param tos The handlers of combo.
      * @param configs The configurations of executing cubes.
      * @param datas The combo datas.
@@ -68,20 +67,22 @@ contract xEngine is IxEngine, Storage, Config {
         bytes[] memory datas
     ) external payable {
         _preProcess();
-        _execs(tos, configs, datas, 0, uint16(tos.length));
-        _postProcess(false); // single chain postProcess
+        _execs(tos, configs, datas);
+        _postProcess();
     }
 
     /**
      * @notice The execution interface for callback function to be executed.
+     * @dev This function can only be called through the handler, which makes
+     * the caller become proxy itself.
      */
     function execs(
         address[] calldata tos,
         bytes32[] calldata configs,
         bytes[] memory datas
-    ) external payable isInitialized {
-         require(msg.sender == address(this), "Does not allow external calls");
-        _execs(tos, configs, datas, 0, uint16(tos.length));
+    ) external payable override isInitialized {
+        require(msg.sender == address(this), "Does not allow external calls");
+        _execs(tos, configs, datas);
     }
 
     /**
@@ -93,18 +94,21 @@ contract xEngine is IxEngine, Storage, Config {
     function _execs(
         address[] memory tos,
         bytes32[] memory configs,
-        bytes[] memory datas,
-        uint16 start,
-        uint16 count
+        bytes[] memory datas
     ) internal {
         bytes32[256] memory localStack;
         uint256 index;
         uint256 counter;
 
-        require(tos.length == datas.length, "Tos and datas length inconsistent");
-        require(tos.length == configs.length, "Tos and configs length inconsistent");
-
-        for (uint256 i = start; i < start + count; i++) {
+        require(
+            tos.length == datas.length,
+            "Tos and datas length inconsistent"
+        );
+        require(
+            tos.length == configs.length,
+            "Tos and configs length inconsistent"
+        );
+        for (uint256 i = 0; i < tos.length; i++) {
             address to = tos[i];
             bytes32 config = configs[i];
             bytes memory data = datas[i];
@@ -164,7 +168,7 @@ contract xEngine is IxEngine, Storage, Config {
             assembly {
                 let loc := add(add(data, 0x20), offset)
                 let m := mload(loc)
-                // Adjust the value by multiplier if a dynamic parameter is not zero
+            // Adjust the value by multiplier if a dynamic parameter is not zero
                 if iszero(iszero(m)) {
                 // Assert no overflow first
                     let p := mul(m, ref)
@@ -197,15 +201,15 @@ contract xEngine is IxEngine, Storage, Config {
         require(newIndex <= 256, "stack overflow");
         assembly {
             let offset := shl(5, index)
-            // Store the data into localStack
+        // Store the data into localStack
             for {
                 let i := 0
             } lt(i, len) {
                 i := add(i, 0x20)
             } {
                 mstore(
-                    add(localStack, add(i, offset)),
-                    mload(add(add(ret, i), 0x20))
+                add(localStack, add(i, offset)),
+                mload(add(add(ret, i), 0x20))
                 )
             }
         }
@@ -222,23 +226,22 @@ contract xEngine is IxEngine, Storage, Config {
         bytes memory data_,
         uint256 counter_
     ) internal returns (bytes memory result) {
-//        require(_isValidHandler(to_), "Invalid handler");
         bool success;
         assembly {
             success := delegatecall(
-                sub(gas(), 5000),
-                to_,
-                add(data_, 0x20),
-                mload(data_),
-                0,
-                0
+            sub(gas(), 5000),
+            to_,
+            add(data_, 0x20),
+            mload(data_),
+            0,
+            0
             )
             let size := returndatasize()
 
             result := mload(0x40)
             mstore(
-                0x40,
-                add(result, and(add(add(size, 0x20), 0x1f), not(0x1f)))
+            0x40,
+            add(result, and(add(add(size, 0x20), 0x1f), not(0x1f)))
             )
             mstore(result, size)
             returndatacopy(add(result, 0x20), 0, size)
@@ -254,13 +257,13 @@ contract xEngine is IxEngine, Storage, Config {
                 revert(abi.decode(result, (string))); // Don't prepend counter
             } else {
                 revert(
-                    string(
-                        abi.encodePacked(
-                            counter_.toString(),
-                            "_",
-                            abi.decode(result, (string))
-                        )
+                string(
+                    abi.encodePacked(
+                        counter_.toString(),
+                        "_",
+                        abi.decode(result, (string))
                     )
+                )
                 );
             }
         }
@@ -297,23 +300,19 @@ contract xEngine is IxEngine, Storage, Config {
     }
 
     /// @notice The post-process phase.
-    function _postProcess(bool isRelayedToNextChain) internal returns (address) {
+    function _postProcess() internal {
         // Handler type will be parsed at the beginning. Will send the token back to
         // user if the handler type is "Token". Will get the handler address and
         // execute the customized post-process if handler type is "Custom".
-        address relayedTokenAddress = address(0);
         while (stack.length > 0) {
             bytes32 top = stack.get();
             // Get handler type
             HandlerType handlerType = HandlerType(uint96(bytes12(top)));
             if (handlerType == HandlerType.Token) {
                 address addr = address(uint160(uint256(top)));
-                if (isRelayedToNextChain) {
-                    relayedTokenAddress = addr;
-                } else {
-                    uint256 tokenAmount = IERC20(addr).balanceOf(address(this));
-                    if (tokenAmount > 0) IERC20(addr).safeTransfer(msg.sender, tokenAmount);
-                }
+                uint256 tokenAmount = IERC20(addr).balanceOf(address(this));
+                if (tokenAmount > 0)
+                    IERC20(addr).safeTransfer(msg.sender, tokenAmount);
             } else if (handlerType == HandlerType.Custom) {
                 address addr = stack.getAddress();
                 _exec(
@@ -331,24 +330,18 @@ contract xEngine is IxEngine, Storage, Config {
         if (amount > 0) payable(msg.sender).transfer(amount);
         // Reset cached datas
         _resetSender();
-
-        return relayedTokenAddress;
     }
-
-    /// @notice Check if the handler is valid in registry.
-//    function _isValidHandler(address handler) internal view returns (bool) {
-//        return registry.isValidHandler(handler);
-//    }
 
     /// @notice Get payload function selector.
     function _getSelector(bytes memory payload)
-        internal
-        pure
-        returns (bytes4 selector)
+    internal
+    pure
+    returns (bytes4 selector)
     {
-        selector = payload[0] |
-            (bytes4(payload[1]) >> 8) |
-            (bytes4(payload[2]) >> 16) |
-            (bytes4(payload[3]) >> 24);
+        selector =
+        payload[0] |
+        (bytes4(payload[1]) >> 8) |
+        (bytes4(payload[2]) >> 16) |
+        (bytes4(payload[3]) >> 24);
     }
 }

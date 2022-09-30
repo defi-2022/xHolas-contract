@@ -40,20 +40,11 @@ contract xHolas is IxHolas, xEngine, Ownable {
         address fromAddress
     );
 
-    struct ChainExecutionData {
-        uint16 index;
-        address[] tos;
-        bytes32[] configs;
-        bytes[] datas;
-    }
-
-    struct RelayExecutionData {
-        uint16 index;
-        address[] tos;
-        bytes32[] configs;
-        uint16[] chainIds;
-        bytes[] datas;
-    }
+    event ChainExecutionDataLog(
+        uint16 index,
+        address[] tos,
+        bytes32[] configs
+    );
 
     IWormhole immutable CORE_BRIDGE;
     ITokenBridge immutable TOKEN_BRIDGE;
@@ -113,36 +104,6 @@ contract xHolas is IxHolas, xEngine, Ownable {
         peerContracts[peerChainId] = wormholeCompatAddress;
     }
 
-    function _getChainAndRelayData(
-        address[] memory tos,
-        bytes32[] memory configs,
-        uint16[] memory chainIds,
-        bytes[] memory datas,
-        uint16 currentChainId
-    )
-        internal
-        pure
-        returns (ChainExecutionData memory, RelayExecutionData memory)
-    {
-        ChainExecutionData memory chainExecutionData;
-        RelayExecutionData memory relayExecutionData;
-        for (uint i = 0; i < tos.length; i++) {
-            if (currentChainId == chainIds[i]) {
-                chainExecutionData.tos[chainExecutionData.index] = tos[i];
-                chainExecutionData.configs[chainExecutionData.index] = configs[i];
-                chainExecutionData.datas[chainExecutionData.index] = datas[i];
-                chainExecutionData.index += 1;
-            } else {
-                relayExecutionData.tos[relayExecutionData.index] = tos[i];
-                relayExecutionData.configs[relayExecutionData.index] = configs[i];
-                relayExecutionData.chainIds[relayExecutionData.index] = chainIds[i];
-                relayExecutionData.datas[relayExecutionData.index] = datas[i];
-                relayExecutionData.index += 1;
-            }
-        }
-        return (chainExecutionData, relayExecutionData);
-    }
-
     /**
      * @notice The execution interface for callback function to be executed.
      */
@@ -154,7 +115,7 @@ contract xHolas is IxHolas, xEngine, Ownable {
     )
         external
         payable
-        isInitialized
+//        isInitialized
         nonReentrancyOnExecuteBridgeOrigin
     {
         // require(msg.sender == address(this), "Does not allow external calls");
@@ -162,30 +123,25 @@ contract xHolas is IxHolas, xEngine, Ownable {
         require(tos.length == configs.length, "Tos and configs length inconsistent");
         require(tos.length == chainIds.length, "Tos and chainIds length inconsistent");
 
-        (
-            ChainExecutionData memory chain,
-            RelayExecutionData memory relay
-        ) = _getChainAndRelayData(
-            tos,
-            configs,
-            chainIds,
-            datas,
-            chainIds[0]
-        ); // assume current chain ID is the first item
+        uint16 count = 0;
+        for (uint16 i = 0; i < tos.length; i++) {
+            if (chainIds[i] != chainIds[0]) break;
+            count += 1;
+        }
 
-        _execs(chain.tos, chain.configs, chain.datas);
-        address relayedTokenAddress = _postProcess(relay.tos.length > 0);
+        _execs(tos, configs, datas, 0, count);
+        address relayedTokenAddress = _postProcess(tos.length > 0);
 
-        if (relay.tos.length > 0) {
-            uint16 targetChainId = relay.chainIds[0];
+        if (tos.length > count) {
+            uint16 targetChainId = chainIds[0];
             bytes32 targetContractAddress = peerContracts[targetChainId];
-            bytes memory payload = abi.encode(msg.sender, relay.tos, relay.configs, relay.chainIds, relay.datas);
+            bytes memory payload = abi.encode(_getSender(), tos, configs, chainIds, datas, 0 + count);
 
             if (relayedTokenAddress != address(0)) {
                 // transfer with token
                 uint256 amount = IERC20(relayedTokenAddress).balanceOf(address(this));
                 // transfer token to this address for approval for token bridge
-                IERC20(relayedTokenAddress).transferFrom(msg.sender, address(this), amount);
+                IERC20(relayedTokenAddress).transferFrom(_getSender(), address(this), amount);
                 // approve token bridge to move token amount to its contract (for locking & minting)
                 IERC20(relayedTokenAddress).approve(TOKEN_BRIDGE_ADDRESS, amount);
 
@@ -237,32 +193,28 @@ contract xHolas is IxHolas, xEngine, Ownable {
             address[] memory tos,
             bytes32[] memory configs,
             uint16[] memory chainIds,
-            bytes[] memory datas
-        ) = abi.decode(vaa.payload, (address, address[], bytes32[], uint16[], bytes[]));
+            bytes[] memory datas,
+            uint16 start
+        ) = abi.decode(vaa.payload, (address, address[], bytes32[], uint16[], bytes[], uint16));
+
+        uint16 count = 0;
+        for (uint16 i = start; i < tos.length; i++) {
+            if (chainIds[i] != chainIds[start]) break;
+            count += 1;
+        }
 
         // require(msg.sender == address(this), "Does not allow external calls");
         require(tos.length == datas.length, "Tos and datas length inconsistent");
         require(tos.length == configs.length, "Tos and configs length inconsistent");
         require(tos.length == chainIds.length, "Tos and chainIds length inconsistent");
 
-        (
-            ChainExecutionData memory chain,
-            RelayExecutionData memory relay
-        ) = _getChainAndRelayData(
-            tos,
-            configs,
-            chainIds,
-            datas,
-            chainIds[0]
-        ); // assume current chain ID is the first item
+        _execs(tos, configs, datas, start, count);
+        address relayedTokenAddress = _postProcess(tos.length > start + count);
 
-        _execs(chain.tos, chain.configs, chain.datas);
-        address relayedTokenAddress = _postProcess(relay.tos.length > 0);
-
-        if (relay.tos.length > 0) {
-            uint16 targetChainId = relay.chainIds[0];
+        if (tos.length > start + count) {
+            uint16 targetChainId = chainIds[start];
             bytes32 targetContractAddress = peerContracts[targetChainId];
-            bytes memory payload = abi.encode(recipient, relay.tos, relay.configs, relay.chainIds, relay.datas);
+            bytes memory payload = abi.encode(recipient, tos, configs, chainIds, datas, start + count);
 
             if (relayedTokenAddress != address(0)) {
                 // transfer with token

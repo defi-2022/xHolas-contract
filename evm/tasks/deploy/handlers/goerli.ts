@@ -1,6 +1,7 @@
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { task } from 'hardhat/config'
 
+// import { Proxy } from '../../../types'
 import { HFunds, HUniswapV2 } from '../../../types'
 
 // npx hardhat --network goerli deploy:goerli-handlers
@@ -15,7 +16,7 @@ task('deploy:handlers-goerli')
     HUniswapV2Factory.connect(signers[0])
 
     const hFunds: HFunds = <HFunds>await HFundsFactory.deploy()
-    const hUniswapV2: HUniswapV2 = <HUniswapV2>await HUniswapV2Factory.deploy('0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45')
+    const hUniswapV2: HUniswapV2 = <HUniswapV2>await HUniswapV2Factory.deploy('0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D')
     // console.log(hUniswapV2.deployTransaction)
 
     await hFunds.deployed()
@@ -24,3 +25,19 @@ task('deploy:handlers-goerli')
     console.log('hFunds deployed to: ', hFunds.address)
     console.log('hUniswapV2 deployed to: ', hUniswapV2.address)
   })
+
+// task('deploy:handlers-goerli')
+//   .setAction(async function (taskArguments: any, { ethers }) {
+//     const signers: SignerWithAddress[] = await ethers.getSigners()
+//
+//     const XProxyFactory = await ethers.getContractFactory('contracts/xProxy.sol:Proxy')
+//
+//     XProxyFactory.connect(signers[0])
+//
+//     const xProxy: Proxy = <Proxy>await XProxyFactory.deploy()
+//     // console.log(hUniswapV2.deployTransaction)
+//
+//     await xProxy.deployed()
+//
+//     console.log('xProxy deployed to: ', xProxy.address)
+//   })
