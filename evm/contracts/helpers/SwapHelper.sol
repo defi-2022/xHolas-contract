@@ -49,56 +49,56 @@ library SwapHelper {
     }
 
     /// @dev Decodes parameters encoded in a VAA
-    function decodeVaaPayload(
-        bytes memory vmPayload
-    ) public pure returns (DecodedVaaParameters memory decoded) {
-        uint index = 0;
-
-        decoded.version = vmPayload.toUint8(index);
-        index += 1;
-
-        decoded.swapAmount = vmPayload.toUint256(index);
-        index += 32;
-
-        // skip
-        index += 46;
-
-        decoded.contractAddress = vmPayload.toAddress(index);
-        index += 20;
-
-        // skip
-        index += 2;
-
-        decoded.fromAddress = vmPayload.toBytes32(index);
-        index += 32;
-
-        decoded.estimatedAmount = vmPayload.toUint256(index);
-        index += 44;
-
-        decoded.recipientAddress = vmPayload.toAddress(index);
-        index += 20;
-
-        decoded.path[0] = vmPayload.toAddress(index);
-        index += 20;
-
-        decoded.path[1] = vmPayload.toAddress(index);
-        index += 20;
-
-        decoded.deadline = vmPayload.toUint256(index);
-        index += 32;
-
-        // skip
-        index += 1;
-
-        decoded.poolFee = vmPayload.toUint16(index);
-        index += 2;
-
-        decoded.swapFunctionType = vmPayload.toUint8(index);
-        index += 1;
-
-        decoded.relayerFee = vmPayload.toUint256(index);
-        index += 32;
-
-        require(vmPayload.length == index, "invalid payload length");
-    }
+//    function decodeVaaPayload(
+//        bytes memory vmPayload
+//    ) public pure returns (DecodedVaaParameters memory decoded) {
+//        uint index = 0;
+//
+//        decoded.version = vmPayload.toUint8(index);
+//        index += 1;
+//
+//        decoded.swapAmount = vmPayload.toUint256(index);
+//        index += 32;
+//
+//        // skip
+//        index += 46;
+//
+//        decoded.contractAddress = vmPayload.toAddress(index);
+//        index += 20;
+//
+//        // skip
+//        index += 2;
+//
+//        decoded.fromAddress = vmPayload.toBytes32(index);
+//        index += 32;
+//
+//        decoded.estimatedAmount = vmPayload.toUint256(index);
+//        index += 44;
+//
+//        decoded.recipientAddress = vmPayload.toAddress(index);
+//        index += 20;
+//
+//        decoded.path[0] = vmPayload.toAddress(index);
+//        index += 20;
+//
+//        decoded.path[1] = vmPayload.toAddress(index);
+//        index += 20;
+//
+//        decoded.deadline = vmPayload.toUint256(index);
+//        index += 32;
+//
+//        // skip
+//        index += 1;
+//
+//        decoded.poolFee = vmPayload.toUint16(index);
+//        index += 2;
+//
+//        decoded.swapFunctionType = vmPayload.toUint8(index);
+//        index += 1;
+//
+//        decoded.relayerFee = vmPayload.toUint256(index);
+//        index += 32;
+//
+//        require(vmPayload.length == index, "invalid payload length");
+//    }
 }

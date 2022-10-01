@@ -40,10 +40,8 @@ contract xHolas is IxHolas, xEngine, Ownable {
         address fromAddress
     );
 
-    event ChainExecutionDataLog(
-        uint16 index,
-        address[] tos,
-        bytes32[] configs
+    event RelayedTokenAddressLog(
+        address relayedTokenAddress
     );
 
     IWormhole immutable CORE_BRIDGE;
@@ -58,6 +56,7 @@ contract xHolas is IxHolas, xEngine, Ownable {
 
     bool internal lockedExecuteBridgeOrigin = false;
 
+    // Address of xHolas contracts on other chains (wormhole ID to wormhole address)
     mapping(uint16 => bytes32) private peerContracts;
 
     constructor(
@@ -118,6 +117,8 @@ contract xHolas is IxHolas, xEngine, Ownable {
 //        isInitialized
         nonReentrancyOnExecuteBridgeOrigin
     {
+        _setSender();
+
         // require(msg.sender == address(this), "Does not allow external calls");
         require(tos.length == datas.length, "Tos and datas length inconsistent");
         require(tos.length == configs.length, "Tos and configs length inconsistent");
@@ -133,15 +134,17 @@ contract xHolas is IxHolas, xEngine, Ownable {
         address relayedTokenAddress = _postProcess(tos.length > 0);
 
         if (tos.length > count) {
-            uint16 targetChainId = chainIds[0];
+            uint16 targetChainId = chainIds[count];
             bytes32 targetContractAddress = peerContracts[targetChainId];
-            bytes memory payload = abi.encode(_getSender(), tos, configs, chainIds, datas, 0 + count);
+            require(bytes32ToAddress(targetContractAddress) != address(0), 'Peer contract is empty on target chain');
+            bytes memory payload = abi.encode(msg.sender, tos, configs, chainIds, datas, 0 + count);
 
+//            emit RelayedTokenAddressLog(bytes32ToAddress(targetContractAddress));
             if (relayedTokenAddress != address(0)) {
                 // transfer with token
                 uint256 amount = IERC20(relayedTokenAddress).balanceOf(address(this));
                 // transfer token to this address for approval for token bridge
-                IERC20(relayedTokenAddress).transferFrom(_getSender(), address(this), amount);
+                IERC20(relayedTokenAddress).transferFrom(msg.sender, address(this), amount);
                 // approve token bridge to move token amount to its contract (for locking & minting)
                 IERC20(relayedTokenAddress).approve(TOKEN_BRIDGE_ADDRESS, amount);
 
@@ -212,8 +215,9 @@ contract xHolas is IxHolas, xEngine, Ownable {
         address relayedTokenAddress = _postProcess(tos.length > start + count);
 
         if (tos.length > start + count) {
-            uint16 targetChainId = chainIds[start];
+            uint16 targetChainId = chainIds[start + count];
             bytes32 targetContractAddress = peerContracts[targetChainId];
+            require(bytes32ToAddress(targetContractAddress) != address(0), 'Peer contract is empty on target chain');
             bytes memory payload = abi.encode(recipient, tos, configs, chainIds, datas, start + count);
 
             if (relayedTokenAddress != address(0)) {

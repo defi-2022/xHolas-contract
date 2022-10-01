@@ -25,7 +25,7 @@ contract FCompoundActions {
     /// @param _tokenAddr The address of the token to be deposited
     /// @param _amount Amount of tokens to be deposited
     function deposit(address _tokenAddr, uint256 _amount) public {
-        IERC20(_tokenAddr).safeTransferFrom(msg.sender, address(this), _amount);
+        IERC20(_tokenAddr).transferFrom(msg.sender, address(this), _amount);
     }
 
     /// @notice User withdraws tokens from the DSProxy
@@ -69,7 +69,7 @@ contract FCompoundActions {
             }
         } else {
             IERC20 token = IERC20(ICToken(_cTokenAddr).underlying());
-            token.safeTransferFrom(msg.sender, address(this), _amount);
+            token.transferFrom(msg.sender, address(this), _amount);
             if (token.allowance(address(this), _cTokenAddr) < _amount) {
                 token.approve(_cTokenAddr, _amount);
             }

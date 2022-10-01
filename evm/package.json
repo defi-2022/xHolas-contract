@@ -91,6 +91,7 @@
     "typechain": "rm -rf types && cross-env TS_NODE_TRANSPILE_ONLY=true hardhat typechain"
   },
   "dependencies": {
+    "@certusone/wormhole-sdk": "^0.7.0",
     "@openzeppelin/contracts": "^4.7.3",
     "@uniswap/v3-periphery": "^1.4.2",
     "solidity-bytes-utils": "^0.8.0"

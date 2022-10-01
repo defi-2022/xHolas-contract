@@ -33,6 +33,7 @@ const chainIds = {
   'optimism-mainnet': 10,
   'polygon-mainnet': 137,
   'polygon-mumbai': 80001,
+  fantom: 250,
 }
 
 function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
@@ -43,6 +44,9 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
       break
     case 'bsc':
       jsonRpcUrl = 'https://data-seed-prebsc-1-s1.binance.org:8545/'
+      break
+    case 'fantom':
+      jsonRpcUrl = 'https://rpc.ftm.tools/'
       break
     case 'bsc-mainnet':
       jsonRpcUrl = 'https://bsc-dataseed1.binance.org'
@@ -74,6 +78,7 @@ const config: HardhatUserConfig = {
       optimisticEthereum: process.env.OPTIMISM_API_KEY || '',
       polygon: process.env.POLYGONSCAN_API_KEY || '',
       polygonMumbai: process.env.POLYGONSCAN_API_KEY || '',
+      // fantom: process.env.FANTOMSCAN_API_KEY || '',
     },
   },
   gasReporter: {
@@ -98,6 +103,7 @@ const config: HardhatUserConfig = {
     optimism: getChainConfig('optimism-mainnet'),
     'polygon-mainnet': getChainConfig('polygon-mainnet'),
     'polygon-mumbai': getChainConfig('polygon-mumbai'),
+    fantom: getChainConfig('fantom'),
   },
   paths: {
     artifacts: './artifacts',

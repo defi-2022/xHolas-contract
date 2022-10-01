@@ -15,11 +15,12 @@ contract HAaveProtocolV2 is HandlerBase, IFlashLoanReceiver {
     using SafeERC20 for IERC20;
 
     // prettier-ignore
-    address public constant PROVIDER = 0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5;
+    // Polygon
+    address public constant PROVIDER = 0xd05e3E715d945B59290df0ae8eF85c1BdB684744;
     // prettier-ignore
-    address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant WETH = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619;
     // prettier-ignore
-    uint16 public constant REFERRAL_CODE = 56;
+    uint16 public constant REFERRAL_CODE = 0;
 
     function getContractName() public pure override returns (string memory) {
         return "HAaveProtocolV2";
