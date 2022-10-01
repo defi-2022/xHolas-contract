@@ -1,5 +1,8 @@
 # xHolas-contract
 
+## Loom video describing contract flow
+[https://www.loom.com/share/085d9fb87d394b8bb56f7c303ffe5af5](xHolas Contract Flow)
+
 ## Smart Contract Architecture
  <img src="https://github.com/xHolas-Pit/.github/blob/main/profile/xHolasDiagram.png?raw=true" width=1000>
 
